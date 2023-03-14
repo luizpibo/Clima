@@ -1,3 +1,4 @@
+import axios from 'axios'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useCallback, useEffect, useState } from 'react'
@@ -10,8 +11,26 @@ export default function Home() {
   const [lodding, setLodding] = useState(true)
   const [geoLocation, setGeoLocation] = useState(false)
 
+  const getWeather = useCallback(() => {
+    navigator.geolocation.getCurrentPosition(async (location) => {
+      setGeoLocation(true)
+      const lat = location.coords.latitude
+      const lon = location.coords.longitude
+      await axios.get("/api/wheather", {
+        params: {
+          lat: String(lat),
+          lon: String(lon),
+        },
+      }
+      ).then(result => {
+        localStorage.setItem("weather", JSON.stringify({ ...result, time: new Date().getTime() }))
+        setWeatherState(result)
+      })
+    });
+  }, [setWeatherState, setGeoLocation])
+
   useEffect(() => {
-    const allowed = async () => {
+    const getInitinalProps = async () => {
       return await navigator.permissions.query({ name: 'geolocation' }).then(function (result) {
         const geoLocationPermissionState = result.state
         if (geoLocationPermissionState != 'denied') {
@@ -22,32 +41,17 @@ export default function Home() {
             if ((weather.time + (1000 * 300) > new Date().getTime())) {
               setWeatherState(weather)
             } else {
-              navigator.geolocation.getCurrentPosition(async (location) => {
-                setGeoLocation(true)
-                const lat = location.coords.latitude
-                const log = location.coords.longitude
-                await WeatherService.getWeatherByCordinates(String(lat), String(log)).then(result => {
-                  localStorage.setItem("weather", JSON.stringify({ ...result, time: new Date().getTime() }))
-                  setWeatherState(result)
-                })
-              });
+              getWeather()
             }
           } else {
-            navigator.geolocation.getCurrentPosition(async (location) => {
-              setGeoLocation(true)
-              const lat = location.coords.latitude
-              const log = location.coords.longitude
-              await WeatherService.getWeatherByCordinates(String(lat), String(log)).then(result => {
-                localStorage.setItem("weather", JSON.stringify({ ...result, time: new Date().getTime() }))
-                setWeatherState(result)
-              })
-            });
+            getWeather()
           }
         }
       });
     }
-    allowed()
-    setLodding(false)
+    getInitinalProps().finally(() => {
+      setLodding(false)
+    })
   }, [])
 
   return (
