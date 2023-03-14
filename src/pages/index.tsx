@@ -1,14 +1,14 @@
+import Display from '@/components/Display'
+import Form from '@/components/Form'
+import { AirQualityProps, WeatherProps, WeatherResponse } from '@/interfaces'
 import axios from 'axios'
 import Head from 'next/head'
-import Image from 'next/image'
 import { useCallback, useEffect, useState } from 'react'
-import WeatherService from '../services'
 // import { Inter } from 'next/font/google'
 // const inter = Inter({ subsets: ['latin'] })
 
 export default function Home() {
-  const [weatherState, setWeatherState] = useState({})
-  const [lodding, setLodding] = useState(true)
+  const [weatherState, setWeatherState] = useState<WeatherResponse>()
   const [geoLocation, setGeoLocation] = useState(false)
 
   const getWeather = useCallback(() => {
@@ -16,15 +16,16 @@ export default function Home() {
       setGeoLocation(true)
       const lat = location.coords.latitude
       const lon = location.coords.longitude
-      await axios.get("/api/wheather", {
+      await axios.get<WeatherResponse>("/api/weather", {
         params: {
           lat: String(lat),
           lon: String(lon),
         },
       }
       ).then(result => {
-        localStorage.setItem("weather", JSON.stringify({ ...result, time: new Date().getTime() }))
-        setWeatherState(result)
+        result.data
+        localStorage.setItem("weather", JSON.stringify({ ...result.data, time: new Date().getTime() }))
+        setWeatherState(result.data)
       })
     });
   }, [setWeatherState, setGeoLocation])
@@ -37,8 +38,8 @@ export default function Home() {
           let weatherRaw = localStorage.getItem("weather")
           if (weatherRaw) {
             const weather = JSON.parse(weatherRaw)
-            //If current time is before weather time plus 5 minutes
-            if ((weather.time + (1000 * 300) > new Date().getTime())) {
+            //If current time is before weather time plus 1 minute
+            if ((weather.time + (1000 * 1) > new Date().getTime())) {
               setWeatherState(weather)
             } else {
               getWeather()
@@ -49,9 +50,7 @@ export default function Home() {
         }
       });
     }
-    getInitinalProps().finally(() => {
-      setLodding(false)
-    })
+    getInitinalProps()
   }, [])
 
   return (
@@ -62,32 +61,21 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      {
-        lodding ? (
-          <svg className="animate-spin h-5 w-5 mr-3 ..." viewBox="0 0 24 24" >Carregando...</svg>
-        )
-          :
-          (
-            geoLocation ? (
-              <main className='my-auto grid grid-cols-4 grid-rows-2 w-full flex-1 h-4/5'>
-                <section>
-                  Week Weather
-                </section>
-                <section>
-                  Sun time
-                </section>
-                <section>
-                  Air quality
-                </section>
-                <section>
-                  Temperature now
-                </section>
-              </main>
-            ) : (
-              <div> NAO TEM GEOLOCATION NA PARADA</div>
+      <main className='flex flex-col gap-5 w-11/12 md:w-4/5 lg:w-3/4 2xl:w-2/4 text-center'>
+        <Form />
+        {
+          weatherState?.weather && weatherState.airQuality ?
+            (
+              <Display weather={weatherState.weather} airQuality={weatherState.airQuality} />
             )
-          )
-      }
+            :
+            (
+              <span className='text-2xl font-semibold'>
+                {geoLocation ? ("Carregando informações...") : ("Compatilhe sua localização com o site para obter o clima da sua região ou digite o nome de uma cidade no campo acima!")}
+              </span>
+            )
+        }
+      </main>
     </>
   )
 }
