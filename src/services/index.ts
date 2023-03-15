@@ -27,46 +27,63 @@ class WeatherService {
         )
     }
 
-    async getWeatherByCordinates(lon: string, lat: string): Promise<WeatherProps> {
-        const response = await axios.get(`${this.baseUrl}/weather`, {
-            params: {
-                lat: lat,
-                lon: lon,
-                appid: this.apiKey,
-                units: "metric",
-                lang: "pt_br",
-            },
-        }).then(data => {
-            return data.data
-        }).catch(data => {
-            console.log("data error", data)
-            // throw new Error("Erro comunicar com o servidor")
-        });
+    switchAirQuality(airQuality: number) {
+        switch (airQuality) {
+            case 1:
+                return "Ótima"
+            case 2:
+                return "Boa"
+            case 3:
+                return "Moderada"
+            case 4:
+                return "Ruim"
+            case 5:
+                return "Péssima"
+            default:
+                return "Sem informação"
+        }
+    }
+
+    serializeWheather(weather: any) {
         return {
-            weather_description: response.weather[0].main,
-            locale: response.name,
-            alt: response.weather[0].description,
+            weather_description: weather.weather[0].main,
+            locale: weather.name,
+            alt: weather.weather[0].description,
             temp: {
-                current: Math.trunc(response.main.temp),
-                sens: Math.trunc(response.main.feels_like),
-                min: Math.trunc(response.main.temp_min),
-                max: Math.trunc(response.main.temp_max),
-                pressure: Math.trunc(response.main.pressure),
-                humidity: Math.trunc(response.main.humidity),
+                current: Math.trunc(weather.main.temp),
+                sens: Math.trunc(weather.main.feels_like),
+                min: Math.trunc(weather.main.temp_min),
+                max: Math.trunc(weather.main.temp_max),
+                pressure: Math.trunc(weather.main.pressure),
+                humidity: Math.trunc(weather.main.humidity),
             },
             wind: {
-                speed: Math.trunc(response.wind.speed),
-                deg: Math.trunc(response.wind.deg),
-                gust: Math.trunc(response.wind.gust)
+                speed: Math.trunc(weather.wind.speed),
+                deg: Math.trunc(weather.wind.deg),
+                gust: Math.trunc(weather.wind.gust)
             },
-            clouds: Math.trunc(response.clouds.all),
-            sunrise: new Date(response.sys.sunrise * 1000).toLocaleString("pt-br"),
-            sunset: new Date(response.sys.sunset * 1000).toLocaleString("pt-br"),
+            clouds: Math.trunc(weather.clouds.all),
+            sunrise: new Date(weather.sys.sunrise * 1000).toLocaleString("pt-br"),
+            sunset: new Date(weather.sys.sunset * 1000).toLocaleString("pt-br"),
         }
     }
 
-    async getAirQualityByCordinates(lon: string, lat: string): Promise<AirQualityProps> {
-        const response = await axios.get(`${this.baseUrl}/air_pollution`, {
+    serializeAirQuality(airQuality: any) {
+        return {
+            aqi: this.switchAirQuality(airQuality.list[0].main.aqi as number),
+            list: {
+                "pm2.5": airQuality.list[0].components.pm2_5,
+                "pm10": airQuality.list[0].components.pm10,
+                "so2": airQuality.list[0].components.so2,
+                "no2": airQuality.list[0].components.no2,
+                "o3": airQuality.list[0].components.o3,
+                "co": airQuality.list[0].components.co,
+            }
+        }
+    }
+
+    async getByCordinates(lon: string, lat: string): Promise<{ weather: WeatherProps, airQuality: AirQualityProps }> {
+        const weather = await axios.get(`${this.baseUrl}/weather`, {
             params: {
                 lat: lat,
                 lon: lon,
@@ -80,17 +97,61 @@ class WeatherService {
             console.log("data error", data)
             // throw new Error("Erro comunicar com o servidor")
         });
-
+        const airQuality = await axios.get(`${this.baseUrl}/air_pollution`, {
+            params: {
+                lat: lat,
+                lon: lon,
+                appid: this.apiKey,
+                units: "metric",
+                lang: "pt_br",
+            },
+        }).then(data => {
+            return data.data
+        }).catch(data => {
+            console.log("data error", data)
+            // throw new Error("Erro comunicar com o servidor")
+        });
         return {
-            aqi: Math.trunc(response.list[0].main.aqi),
-            "pm2.5": Math.trunc(response.list[0].components.pm2_5),
-            "pm10": Math.trunc(response.list[0].components.pm10),
-            "so2": Math.trunc(response.list[0].components.so2),
-            "no2": Math.trunc(response.list[0].components.no2),
-            "o3": Math.trunc(response.list[0].components.o3),
-            "co": Math.trunc(response.list[0].components.co),
+            weather: this.serializeWheather(weather),
+            airQuality: this.serializeAirQuality(airQuality)
         }
     }
+
+    async getByName(name: string): Promise<{ weather: WeatherProps, airQuality: AirQualityProps }> {
+        const weather = await axios.get(`${this.baseUrl}/weather`, {
+            params: {
+                q: name,
+                appid: this.apiKey,
+                units: "metric",
+                lang: "pt_br",
+            },
+        }).then(data => {
+            return data.data
+        }).catch(data => {
+            console.log("data error", data)
+            // throw new Error("Erro comunicar com o servidor")
+        });
+
+        const airQuality = await axios.get(`${this.baseUrl}/air_pollution`, {
+            params: {
+                q: name,
+                appid: this.apiKey,
+                units: "metric",
+                lang: "pt_br",
+            },
+        }).then(data => {
+            return data.data
+        }).catch(data => {
+            console.log("data error", data)
+            // throw new Error("Erro comunicar com o servidor")
+        });
+
+        return {
+            weather: this.serializeWheather(weather),
+            airQuality: this.serializeAirQuality(airQuality)
+        }
+    }
+
 }
 
 export default new WeatherService()

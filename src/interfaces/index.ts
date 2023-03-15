@@ -21,13 +21,15 @@ export interface WeatherProps {
 }
 
 export interface AirQualityProps {
-    aqi: number,
-    "pm2.5": number,
-    "pm10": number,
-    "so2": number,
-    "no2": number,
-    "o3": number,
-    "co": number,
+    aqi: string,
+    list: {
+        "pm2.5": number,
+        "pm10": number,
+        "so2": number,
+        "no2": number,
+        "o3": number,
+        "co": number,
+    }
 }
 
 export interface WeatherResponse {
