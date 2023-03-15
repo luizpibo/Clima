@@ -1,4 +1,4 @@
-import { AirQualityProps, WeatherProps } from "@/interfaces";
+import { AirQualityProps, DailyProps, WeatherProps } from "@/interfaces";
 import axios from "axios";
 
 class WeatherService {
@@ -82,49 +82,57 @@ class WeatherService {
         }
     }
 
-    async getByCordinates(lon: string, lat: string): Promise<{ weather: WeatherProps, airQuality: AirQualityProps }> {
-        const weather = await axios.get(`${this.baseUrl}/weather`, {
-            params: {
-                lat: lat,
-                lon: lon,
-                appid: this.apiKey,
-                units: "metric",
-                lang: "pt_br",
-            },
-        }).then(data => {
-            return data.data
-        }).catch(data => {
-            console.log("data error", data)
-            // throw new Error("Erro comunicar com o servidor")
-        });
-        const airQuality = await axios.get(`${this.baseUrl}/air_pollution`, {
-            params: {
-                lat: lat,
-                lon: lon,
-                appid: this.apiKey,
-                units: "metric",
-                lang: "pt_br",
-            },
-        }).then(data => {
-            return data.data
-        }).catch(data => {
-            console.log("data error", data)
-            // throw new Error("Erro comunicar com o servidor")
-        });
-        return {
-            weather: this.serializeWheather(weather),
-            airQuality: this.serializeAirQuality(airQuality)
+    serializeNameOfDay(dayNumber: number) {
+        switch (dayNumber) {
+            case 0:
+                return "Domingo"
+            case 1:
+                return "Segunda"
+            case 2:
+                return "Terça"
+            case 3:
+                return "Quarta"
+            case 4:
+                return "Quinta"
+            case 5:
+                return "Sexta"
+            case 6:
+                return "Sábado"
+            default:
+                return "Domingo"
         }
     }
 
-    async getByName(name: string): Promise<{ weather: WeatherProps, airQuality: AirQualityProps }> {
+    serializeDaily(daily: any) {
+        const list: any[] = daily.list;
+        let dailyWeather: DailyProps[] = []
+        if (list.length > 0) {
+            dailyWeather = list.map((daily: any, index) => {
+                const day = this.serializeNameOfDay(new Date(daily.dt * 1000).getDay())
+                console.log("Dia - ", new Date(daily.dt * 1000).toLocaleString())
+                return {
+                    day,
+                    description: daily.weather.description,
+                    min: Math.trunc(daily.main.temp_min),
+                    max: Math.trunc(daily.main.temp_max),
+                    cnt: daily.cnt,
+                }
+            })
+        }
+        return dailyWeather
+    }
+
+    async getByCordinates(lon: string, lat: string): Promise<{ weather: WeatherProps, airQuality: AirQualityProps, daily: DailyProps[] }> {
+        const baseParams = {
+            lat,
+            lon,
+            appid: this.apiKey,
+            units: "metric",
+            lang: "pt_br",
+        }
+
         const weather = await axios.get(`${this.baseUrl}/weather`, {
-            params: {
-                q: name,
-                appid: this.apiKey,
-                units: "metric",
-                lang: "pt_br",
-            },
+            params: baseParams,
         }).then(data => {
             return data.data
         }).catch(data => {
@@ -133,11 +141,17 @@ class WeatherService {
         });
 
         const airQuality = await axios.get(`${this.baseUrl}/air_pollution`, {
+            params: baseParams,
+        }).then(data => {
+            return data.data
+        }).catch(data => {
+            console.log("data error", data)
+            // throw new Error("Erro comunicar com o servidor")
+        });
+
+        const daily = await axios.get(`${this.baseUrl}/forecast`, {
             params: {
-                q: name,
-                appid: this.apiKey,
-                units: "metric",
-                lang: "pt_br",
+                ...baseParams,
             },
         }).then(data => {
             return data.data
@@ -148,7 +162,53 @@ class WeatherService {
 
         return {
             weather: this.serializeWheather(weather),
-            airQuality: this.serializeAirQuality(airQuality)
+            airQuality: this.serializeAirQuality(airQuality),
+            daily: this.serializeDaily(daily)
+        }
+    }
+
+    async getByName(name: string): Promise<{ weather: WeatherProps, airQuality: AirQualityProps, daily: DailyProps[] }> {
+        const baseParams = {
+            q: name,
+            appid: this.apiKey,
+            units: "metric",
+            lang: "pt_br",
+        }
+
+        const weather = await axios.get(`${this.baseUrl}/weather`, {
+            params: baseParams
+        }).then(data => {
+            return data.data
+        }).catch(data => {
+            console.log("data error", data)
+            // throw new Error("Erro comunicar com o servidor")
+        });
+
+        const airQuality = await axios.get(`${this.baseUrl}/air_pollution`, {
+            params: baseParams
+        }).then(data => {
+            return data.data
+        }).catch(data => {
+            console.log("data error", data)
+            // throw new Error("Erro comunicar com o servidor")
+        });
+
+        const daily = await axios.get(`${this.baseUrl}/forecast`, {
+            params: {
+                ...baseParams,
+                cnt: 5,
+            },
+        }).then(data => {
+            return data.data
+        }).catch(data => {
+            console.log("data error", data)
+            // throw new Error("Erro comunicar com o servidor")
+        });
+
+        return {
+            weather: this.serializeWheather(weather),
+            airQuality: this.serializeAirQuality(airQuality),
+            daily: this.serializeDaily(daily)
         }
     }
 

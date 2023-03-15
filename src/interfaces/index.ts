@@ -32,7 +32,16 @@ export interface AirQualityProps {
     }
 }
 
+export interface DailyProps {
+    day: string,
+    description: string,
+    min: number,
+    max: number,
+    cnt: number,
+}
+
 export interface WeatherResponse {
     weather: WeatherProps,
-    airQuality: AirQualityProps
+    airQuality: AirQualityProps,
+    daily: DailyProps[]
 }

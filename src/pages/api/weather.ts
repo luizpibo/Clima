@@ -13,13 +13,15 @@ export default async function handler(
     const city_name = req.query["citie_name"] as string
 
     if (lat && lon) {
-      const { weather, airQuality } = await WeatherService.getByCordinates(lon, lat)
-      res.status(200).json({ weather, airQuality })
+      const result = await WeatherService.getByCordinates(lon, lat)
+      res.status(200).json({ ...result })
     }
+
     if (city_name) {
-      const { weather, airQuality } = await WeatherService.getByName(city_name)
-      res.status(200).json({ weather, airQuality })
+      const result = await WeatherService.getByName(city_name)
+      res.status(200).json({ ...result })
     }
+    
     res.status(400).json({ message: "Erro na requisição!" })
   }
 }

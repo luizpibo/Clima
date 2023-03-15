@@ -4,9 +4,9 @@ import React from 'react'
 import Clock from '../Clock'
 
 
-const Display: React.FC<WeatherResponse> = ({ weather, airQuality }) => {
+const Display: React.FC<WeatherResponse> = ({ weather, airQuality, daily }) => {
     return (
-        <section className='flex flex-col lg:flex-row gap-4 w-full text-white'>
+        <div className='flex flex-col lg:flex-row gap-4 w-full text-white'>
             <section className='relative text-center shadow-xl rounded-lg'>
                 <Image src="/clouds.jpg" className='rounded-lg z-0 opacity-60' fill alt="weather background" />
                 <div className='relative flex flex-col flex-1 h-full gap-8 bg-sky-800 bg-opacity-30 backdrop-blur-sm p-4 rounded-lg'>
@@ -61,12 +61,12 @@ const Display: React.FC<WeatherResponse> = ({ weather, airQuality }) => {
             </section>
             <section className='flex flex-col flex-1 gap-4'>
                 <div className='flex justify-center gap-4'>
-                    <section className='flex flex-col gap-4 w-full p-4 rounded-md bg-sky-600 shadow-xl'>
+                    <section className='flex flex-col gap-4 w-full p-4 rounded-md bg-gradient-to-r from-sky-600 to-sky-500 shadow-xl'>
                         <span className='flex items-center justify-center gap-3'> <Image src="/icons/air-quality-icon.svg" width={30} height={30} alt="air quality icon" />Qualidaded do ar</span>
                         {airQuality ? (
                             <>
                                 <div>{airQuality.aqi}</div>
-                                <div className='flex gap-4 text-sm p-2 backdrop-blur-lg bg-sky-700 rounded-lg'>{Object.keys(airQuality.list).map((key, i) => {
+                                <div className='flex gap-4 text-sm p-2 backdrop-blur-lg bg-sky-700 bg-opacity-50 rounded-lg'>{Object.keys(airQuality.list).map((key, i) => {
                                     return (<div className='font-medium'>{airQuality.list[key]} <span className='font-light'>{key}</span></div>)
                                 })}</div>
                             </>
@@ -77,15 +77,24 @@ const Display: React.FC<WeatherResponse> = ({ weather, airQuality }) => {
                         )}
 
                     </section>
-                    <section className='w-full p-4 rounded-md bg-sky-600'>
+                    <section className='w-full p-4 rounded-md bg-gradient-to-l from-sky-600 to-sky-500 '>
                         {weather?.wind.speed}
                     </section>
                 </div>
-                <section className='row-start-3 row-end-5 row-span-2 col-span-2 p-4 rounded-md bg-sky-600'>
-
+                <section className='flex gap-4 p-4 rounded-md bg-gradient-to-t h-full from-sky-600 to-sky-500 '>
+                    {daily.map((day) => {
+                        return (
+                            <div className='grid'>
+                                <span>{day.day}</span>
+                                <span>icon</span>
+                                <span>{day.description}</span>
+                                <div className='flex gap-3'><span>{day.min} &deg;</span> <span>{day.max} &deg;</span></div>
+                            </div>
+                        )
+                    })}
                 </section>
             </section>
-        </section>
+        </div>
     )
 }
 

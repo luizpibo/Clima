@@ -66,7 +66,7 @@ export default function Home() {
         {
           weatherState?.weather && weatherState.airQuality ?
             (
-              <Display weather={weatherState.weather} airQuality={weatherState.airQuality} />
+              <Display weather={weatherState.weather} airQuality={weatherState.airQuality} daily={weatherState.daily} />
             )
             :
             (
