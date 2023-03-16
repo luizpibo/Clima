@@ -104,21 +104,71 @@ class WeatherService {
     }
 
     serializeDaily(daily: any) {
-        const list: any[] = daily.list;
+        const list: any[] | undefined = daily?.list;
         let dailyWeather: DailyProps[] = []
-        if (list.length > 0) {
+        if (list) {
             dailyWeather = list.map((daily: any, index) => {
                 const day = this.serializeNameOfDay(new Date(daily.dt * 1000).getDay())
-                console.log("Dia - ", new Date(daily.dt * 1000).toLocaleString())
+                if (index == 0) {
+                    console.log("aa", daily)
+                }
                 return {
                     day,
-                    description: daily.weather.description,
+                    description: daily.weather[0].description,
                     min: Math.trunc(daily.main.temp_min),
                     max: Math.trunc(daily.main.temp_max),
                     cnt: daily.cnt,
                 }
             })
+            interface DescriptionsProps {
+                day: string,
+                descriptions: string[]
+            }
+
+            let newList: DailyProps[] = []
+            let min: number = 0, max: number = 0, count = 0
+            let descriptions: DescriptionsProps[] = []
+            dailyWeather.forEach((daily) => {
+                if (newList.length == 0) {
+                    newList.push(daily)
+                    descriptions.push({
+                        day: daily.day,
+                        descriptions: [daily.description]
+                    })
+                } else {
+                    if (newList[newList.length - 1].day != daily.day) {
+                        newList.push(daily)
+                        min = 0
+                        max = 0
+                        descriptions.push({
+                            day: daily.day,
+                            descriptions: [daily.description]
+                        })
+                    } else {
+                        let lastIndexOfArray = descriptions.length - 1
+                        descriptions[lastIndexOfArray].descriptions = [...descriptions[lastIndexOfArray].descriptions, daily.description]
+
+                        if (min > daily.min) {
+                            min = daily.min
+                            newList[newList.length - 1].min = min
+                        }
+                        if (max < daily.max) {
+                            max = daily.max
+                            newList[newList.length - 1].max = max
+                        }
+                    }
+                }
+            });
+            const newDescriptions = descriptions.map((day) => {
+                day.descriptions.reduce((previousValue, currentValue) => { 
+                    
+                }, day)
+            })
+            console.log("descriptions", descriptions)
+            console.log("New list", newList)
+            return newList
         }
+
         return dailyWeather
     }
 

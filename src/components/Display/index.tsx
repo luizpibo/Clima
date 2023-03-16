@@ -81,10 +81,10 @@ const Display: React.FC<WeatherResponse> = ({ weather, airQuality, daily }) => {
                         {weather?.wind.speed}
                     </section>
                 </div>
-                <section className='flex gap-4 p-4 rounded-md bg-gradient-to-t h-full from-sky-600 to-sky-500 '>
+                <section className='flex justify-center items-center gap-8 p-4 rounded-md bg-gradient-to-t h-full from-sky-600 to-sky-500 '>
                     {daily.map((day) => {
                         return (
-                            <div className='grid'>
+                            <div className='grid gap-4'>
                                 <span>{day.day}</span>
                                 <span>icon</span>
                                 <span>{day.description}</span>
