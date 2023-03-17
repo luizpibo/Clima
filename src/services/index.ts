@@ -213,7 +213,7 @@ class WeatherService {
         return undefined
     }
 
-    public async getByCordinates(lon: string, lat: string): Promise<{ weather: WeatherProps, airQuality: AirQualityProps, daily: DailyProps[] }> {
+    public async getByCordinates(lon: string, lat: string): Promise<{ weather: WeatherProps, airQuality: AirQualityProps, daily: DailyProps[] | undefined }> {
         const baseParams = {
             lat,
             lon,
@@ -258,7 +258,7 @@ class WeatherService {
         }
     }
 
-    public async getByName(name: string): Promise<{ weather: WeatherProps, airQuality: AirQualityProps, daily: DailyProps[] }> {
+    public async getByName(name: string): Promise<{ weather: WeatherProps, airQuality: AirQualityProps, daily: DailyProps[] | undefined }> {
         const baseParams = {
             q: name,
             appid: this.apiKey,
