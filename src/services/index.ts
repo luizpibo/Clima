@@ -1,4 +1,4 @@
-import { AirQualityProps, DailyProps, WeatherProps } from "@/interfaces";
+import { AirQualityProps, DailyProps, WeatherProps, WeatherResponse } from "@/interfaces";
 import axios from "axios";
 
 class WeatherService {
@@ -213,7 +213,7 @@ class WeatherService {
         return undefined
     }
 
-    public async getByCordinates(lon: string, lat: string): Promise<{ weather: WeatherProps, airQuality: AirQualityProps, daily: DailyProps[] | undefined }> {
+    public async getByCordinates(lon: string, lat: string): Promise<WeatherResponse> {
         const baseParams = {
             lat,
             lon,
@@ -258,7 +258,7 @@ class WeatherService {
         }
     }
 
-    public async getByName(name: string): Promise<{ weather: WeatherProps, airQuality: AirQualityProps, daily: DailyProps[] | undefined }> {
+    public async getByName(name: string): Promise<WeatherResponse> {
         const baseParams = {
             q: name,
             appid: this.apiKey,

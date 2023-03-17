@@ -44,5 +44,5 @@ export interface DailyProps {
 export interface WeatherResponse {
     weather: WeatherProps,
     airQuality: AirQualityProps,
-    daily: DailyProps[]
+    daily: DailyProps[] | undefined
 }
