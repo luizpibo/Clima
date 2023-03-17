@@ -104,14 +104,18 @@ class WeatherService {
     }
 
     serializeDaily(daily: any) {
+        interface DescriptionsProps {
+            day: string,
+            descriptions: string[]
+        }
         const list: any[] | undefined = daily?.list;
         let dailyWeather: DailyProps[] = []
+        //se tem a lista
         if (list) {
+            console.log("criando array raw")
             dailyWeather = list.map((daily: any, index) => {
+                //coletando string com nome do dia
                 const day = this.serializeNameOfDay(new Date(daily.dt * 1000).getDay())
-                if (index == 0) {
-                    console.log("aa", daily)
-                }
                 return {
                     day,
                     description: daily.weather[0].description,
@@ -120,15 +124,16 @@ class WeatherService {
                     cnt: daily.cnt,
                 }
             })
-            interface DescriptionsProps {
-                day: string,
-                descriptions: string[]
-            }
 
+            //nova lista
             let newList: DailyProps[] = []
+            //variaveis auxiliares
             let min: number = 0, max: number = 0, count = 0
+            //array de descrições
             let descriptions: DescriptionsProps[] = []
+
             dailyWeather.forEach((daily) => {
+                //se for o primeiro elemento da lista, adicione
                 if (newList.length == 0) {
                     newList.push(daily)
                     descriptions.push({
@@ -136,7 +141,9 @@ class WeatherService {
                         descriptions: [daily.description]
                     })
                 } else {
+                    //se o nome do dia for diferente
                     if (newList[newList.length - 1].day != daily.day) {
+                        //adicione e zere as variaveis de temperatura min e max
                         newList.push(daily)
                         min = 0
                         max = 0
@@ -145,9 +152,11 @@ class WeatherService {
                             descriptions: [daily.description]
                         })
                     } else {
+                        //se o nome for igual
                         let lastIndexOfArray = descriptions.length - 1
-                        descriptions[lastIndexOfArray].descriptions = [...descriptions[lastIndexOfArray].descriptions, daily.description]
-
+                        //adicione a nova descrição
+                        descriptions[lastIndexOfArray].descriptions.push(daily.description)
+                        //checa se a temp min atual e menor que de hambiente e o max tbm..
                         if (min > daily.min) {
                             min = daily.min
                             newList[newList.length - 1].min = min
@@ -159,16 +168,62 @@ class WeatherService {
                     }
                 }
             });
-            const newDescriptions = descriptions.map((day) => {
-                day.descriptions.reduce((previousValue, currentValue) => { 
-                    
-                }, day)
-            })
-            console.log("descriptions", descriptions)
-            console.log("New list", newList)
-            return newList
-        }
 
+            //Interando sobre o array que contem as descrilções para cada dia
+            const descriptionOfDays = descriptions.map((day) => {
+                //criar um array que vai conter os objetos com a descrição e o somatorio de ocorrencias
+                let amountOfDescriptionsDays: { description: string, amount: number }[] = []
+
+                //para cada descrição 
+                //para cada description do objeto
+                day.descriptions.forEach((description) => {
+                    //se o array estiver vazio, adicione o primeiro elemento
+                    if (amountOfDescriptionsDays.length == 0) {
+                        amountOfDescriptionsDays.push({
+                            description,
+                            amount: 1
+                        })
+                    } else {
+                        //Iniciando a variavel que deve conter o index, caso contrario o valor é igual a -1
+                        let equalIndex: number = -1
+                        //se houver alguma descrição igual, salve o index da posição
+                        amountOfDescriptionsDays.find((current, index) => {
+                            if (current.description.match(description)) {
+                                equalIndex = index
+                                return current
+                            }
+                        })
+                        //se houver a mesma descrição adicione 1 no na quantidade
+                        if (equalIndex != -1) {
+                            amountOfDescriptionsDays[equalIndex].amount += 1
+                        } else {
+                            //se não houver, adicione o novo objeto
+                            amountOfDescriptionsDays.push({ description, amount: 1 })
+                        }
+                    }
+                })
+
+                //Verifiar qual descrição possui a maior quantidade para esse dia
+                let biger: { amount: number, index: number } = { amount: -1, index: -1 }
+                amountOfDescriptionsDays.forEach((amount, index) => {
+                    if (amount.amount > biger.amount) {
+                        biger.amount = amount.amount
+                        biger.index = index
+                    }
+                })
+                return { day: day.day, description: amountOfDescriptionsDays[biger.index].description }
+            })
+
+            let weatherOfDays = newList.map((weather) => {
+                descriptionOfDays.forEach((day, index) => {
+                    if (day.day.match(weather.day)) {
+                        weather.description = day.description
+                    }
+                })
+                return weather
+            })
+            return weatherOfDays
+        }
         return dailyWeather
     }
 

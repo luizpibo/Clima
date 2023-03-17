@@ -15,13 +15,15 @@ export default async function handler(
     if (lat && lon) {
       const result = await WeatherService.getByCordinates(lon, lat)
       res.status(200).json({ ...result })
+      return
     }
 
     if (city_name) {
       const result = await WeatherService.getByName(city_name)
       res.status(200).json({ ...result })
+      return
     }
-    
+
     res.status(400).json({ message: "Erro na requisição!" })
   }
 }
