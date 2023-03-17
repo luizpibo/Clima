@@ -10,24 +10,7 @@ class WeatherService {
         this.apiKey = process.env.NEXT_PUBLIC_API_KEY as string
     }
 
-    getCoords() {
-        return new Promise((resolve, reject) =>
-            navigator.permissions ?
-                // Permission API is implemented
-                navigator.permissions.query({
-                    name: 'geolocation'
-                }).then(permission =>
-                    // is geolocation granted?
-                    permission.state === "granted"
-                        ? navigator.geolocation.getCurrentPosition(pos => resolve(pos.coords))
-                        : resolve(null)
-                ) :
-                // Permission API was not implemented
-                reject(new Error("Permission API is not supported"))
-        )
-    }
-
-    switchAirQuality(airQuality: number) {
+    private switchAirQuality(airQuality: number) {
         switch (airQuality) {
             case 1:
                 return "Ótima"
@@ -44,9 +27,10 @@ class WeatherService {
         }
     }
 
-    serializeWheather(weather: any) {
+    private serializeWheather(weather: any) {
         return {
             weather_description: weather.weather[0].main,
+            weather_icon: weather.weather[0].icon,
             locale: weather.name,
             alt: weather.weather[0].description,
             temp: {
@@ -68,7 +52,7 @@ class WeatherService {
         }
     }
 
-    serializeAirQuality(airQuality: any) {
+    private serializeAirQuality(airQuality: any) {
         return {
             aqi: this.switchAirQuality(airQuality.list[0].main.aqi as number),
             list: {
@@ -82,7 +66,7 @@ class WeatherService {
         }
     }
 
-    serializeNameOfDay(dayNumber: number) {
+    private serializeNameOfDay(dayNumber: number) {
         switch (dayNumber) {
             case 0:
                 return "Domingo"
@@ -103,74 +87,75 @@ class WeatherService {
         }
     }
 
-    serializeDaily(daily: any) {
-        interface DescriptionsProps {
+    private serializeDaily(dailyRaw: any) {
+        interface DailyDescription {
             day: string,
             descriptions: string[]
         }
-        const list: any[] | undefined = daily?.list;
-        let dailyWeather: DailyProps[] = []
+
+        const rawWeathers: any[] | undefined = dailyRaw?.list;
+        let allWeathers: DailyProps[] = []
         //se tem a lista
-        if (list) {
-            console.log("criando array raw")
-            dailyWeather = list.map((daily: any, index) => {
+        if (rawWeathers) {
+            allWeathers = rawWeathers.map((daily: any) => {
                 //coletando string com nome do dia
                 const day = this.serializeNameOfDay(new Date(daily.dt * 1000).getDay())
                 return {
+                    weather_icon: daily.weather[0].icon,
                     day,
                     description: daily.weather[0].description,
                     min: Math.trunc(daily.main.temp_min),
                     max: Math.trunc(daily.main.temp_max),
-                    cnt: daily.cnt,
                 }
             })
 
-            //nova lista
-            let newList: DailyProps[] = []
+            //lista dos dias com o nome do dia, temp min e max
+            let weatherWithDescription: DailyProps[] = []
             //variaveis auxiliares
-            let min: number = 0, max: number = 0, count = 0
+            let min: number = 0, max: number = 0
             //array de descrições
-            let descriptions: DescriptionsProps[] = []
+            let descriptionsOfDay: DailyDescription[] = []
 
-            dailyWeather.forEach((daily) => {
+            allWeathers.forEach((daily) => {
+                let lastIndexOfDescriptionsArray = descriptionsOfDay.length - 1
+                let lastIndexOfweatherWithDescriptionArray = weatherWithDescription.length - 1
                 //se for o primeiro elemento da lista, adicione
-                if (newList.length == 0) {
-                    newList.push(daily)
-                    descriptions.push({
+                if (weatherWithDescription.length == 0) {
+                    weatherWithDescription.push(daily)
+                    descriptionsOfDay.push({
                         day: daily.day,
                         descriptions: [daily.description]
                     })
                 } else {
                     //se o nome do dia for diferente
-                    if (newList[newList.length - 1].day != daily.day) {
+                    if (weatherWithDescription[lastIndexOfDescriptionsArray].day != daily.day) {
                         //adicione e zere as variaveis de temperatura min e max
-                        newList.push(daily)
+                        weatherWithDescription.push(daily)
                         min = 0
                         max = 0
-                        descriptions.push({
+                        descriptionsOfDay.push({
                             day: daily.day,
                             descriptions: [daily.description]
                         })
                     } else {
                         //se o nome for igual
-                        let lastIndexOfArray = descriptions.length - 1
                         //adicione a nova descrição
-                        descriptions[lastIndexOfArray].descriptions.push(daily.description)
+                        descriptionsOfDay[lastIndexOfDescriptionsArray].descriptions.push(daily.description)
                         //checa se a temp min atual e menor que de hambiente e o max tbm..
                         if (min > daily.min) {
                             min = daily.min
-                            newList[newList.length - 1].min = min
+                            weatherWithDescription[lastIndexOfweatherWithDescriptionArray].min = min
                         }
                         if (max < daily.max) {
                             max = daily.max
-                            newList[newList.length - 1].max = max
+                            weatherWithDescription[lastIndexOfweatherWithDescriptionArray].max = max
                         }
                     }
                 }
             });
 
             //Interando sobre o array que contem as descrilções para cada dia
-            const descriptionOfDays = descriptions.map((day) => {
+            const descriptionOfDays = descriptionsOfDay.map((day) => {
                 //criar um array que vai conter os objetos com a descrição e o somatorio de ocorrencias
                 let amountOfDescriptionsDays: { description: string, amount: number }[] = []
 
@@ -214,20 +199,21 @@ class WeatherService {
                 return { day: day.day, description: amountOfDescriptionsDays[biger.index].description }
             })
 
-            let weatherOfDays = newList.map((weather) => {
-                descriptionOfDays.forEach((day, index) => {
+            let finalWeather = weatherWithDescription.map((weather) => {
+                descriptionOfDays.forEach((day) => {
                     if (day.day.match(weather.day)) {
                         weather.description = day.description
                     }
                 })
                 return weather
             })
-            return weatherOfDays
+
+            return finalWeather
         }
-        return dailyWeather
+        return undefined
     }
 
-    async getByCordinates(lon: string, lat: string): Promise<{ weather: WeatherProps, airQuality: AirQualityProps, daily: DailyProps[] }> {
+    public async getByCordinates(lon: string, lat: string): Promise<{ weather: WeatherProps, airQuality: AirQualityProps, daily: DailyProps[] }> {
         const baseParams = {
             lat,
             lon,
@@ -272,7 +258,7 @@ class WeatherService {
         }
     }
 
-    async getByName(name: string): Promise<{ weather: WeatherProps, airQuality: AirQualityProps, daily: DailyProps[] }> {
+    public async getByName(name: string): Promise<{ weather: WeatherProps, airQuality: AirQualityProps, daily: DailyProps[] }> {
         const baseParams = {
             q: name,
             appid: this.apiKey,
@@ -320,3 +306,21 @@ class WeatherService {
 }
 
 export default new WeatherService()
+
+
+// getCoords() {
+//     return new Promise((resolve, reject) =>
+//         navigator.permissions ?
+//             // Permission API is implemented
+//             navigator.permissions.query({
+//                 name: 'geolocation'
+//             }).then(permission =>
+//                 // is geolocation granted?
+//                 permission.state === "granted"
+//                     ? navigator.geolocation.getCurrentPosition(pos => resolve(pos.coords))
+//                     : resolve(null)
+//             ) :
+//             // Permission API was not implemented
+//             reject(new Error("Permission API is not supported"))
+//     )
+// }

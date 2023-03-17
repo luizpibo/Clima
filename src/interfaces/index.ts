@@ -1,4 +1,5 @@
 export interface WeatherProps {
+    weather_icon: string,
     weather_description: string,
     locale: string,
     alt: string,
@@ -34,10 +35,10 @@ export interface AirQualityProps {
 
 export interface DailyProps {
     day: string,
+    weather_icon: string,
     description: string,
     min: number,
     max: number,
-    cnt: number,
 }
 
 export interface WeatherResponse {
